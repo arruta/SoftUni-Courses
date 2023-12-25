@@ -19,7 +19,8 @@ public class ActivationLinkCleanupScheduler {
     //@Scheduled(cron="*/10 * * * * *")
     @Scheduled(fixedRate = 10000, initialDelay = 10000)
     public void cleanUp(){
-        System.out.println("Trigger cleanup of activation links. " + LocalDateTime.now());
+        // System.out.println("Trigger cleanup of activation links. " + LocalDateTime.now());
+        // TODO
         userActivationService.cleanUpObsoleteActivationLinks();
     }
 }

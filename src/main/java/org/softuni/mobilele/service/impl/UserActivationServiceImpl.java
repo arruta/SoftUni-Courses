@@ -42,7 +42,7 @@ public class UserActivationServiceImpl implements UserActivationService {
     @Override
     public void cleanUpObsoleteActivationLinks() {
         //TODO: Implement
-        System.out.println("NOT YET");
+        // System.out.println("NOT YET");
     }
 
     public String createActivationCode(String userEmail) {

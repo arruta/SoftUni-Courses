@@ -16,7 +16,9 @@ public interface OfferService {
 
     Page<OfferSummaryDTO> getAllOffers(Pageable pageable);
 
-    Optional<OfferDetailDTO> getOfferDetail (UUID offerUUID);
+    Optional<OfferDetailDTO> getOfferDetail (UUID offerUUID, UserDetails viewer);
 
     void deleteOffer(UUID offerUUID);
+
+    boolean isOwner(UUID uuid, String userName);
 }

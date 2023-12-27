@@ -10,12 +10,13 @@ public record OfferDetailDTO(
         String brand,
         String model,
         int year,
-
         long mileage,
         BigDecimal price,
         EngineEnum engine,
         TransmissionEnum transmission,
-        String imageUrl) {
+        String imageUrl,
+        String seller,
+        boolean viewerIsOwner) {
     public String summary() {
         return brand + " " + model + ", " + year;
     }

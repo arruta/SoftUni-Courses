@@ -4,9 +4,8 @@ import jakarta.transaction.Transactional;
 import org.softuni.mobilele.model.dto.CreateOfferDTO;
 import org.softuni.mobilele.model.dto.OfferDetailDTO;
 import org.softuni.mobilele.model.dto.OfferSummaryDTO;
-import org.softuni.mobilele.model.entity.ModelEntity;
-import org.softuni.mobilele.model.entity.OfferEntity;
-import org.softuni.mobilele.model.entity.UserEntity;
+import org.softuni.mobilele.model.entity.*;
+import org.softuni.mobilele.model.enums.UserRoleEnum;
 import org.softuni.mobilele.repository.ModelRepository;
 import org.softuni.mobilele.repository.OfferRepository;
 import org.softuni.mobilele.repository.UserRepository;
@@ -15,9 +14,9 @@ import org.softuni.mobilele.service.OfferService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,7 +45,7 @@ public class OfferServiceImpl implements OfferService {
         ModelEntity modelEntity = modelRepository.findById(createOfferDTO.getModelId()).orElseThrow(() ->
                 new IllegalArgumentException("Model with id " + createOfferDTO.getModelId() + " not found!"));
 
-        UserEntity sellerEntity = userRepository.findByEmail(seller.getUsername()).orElseThrow(()->
+        UserEntity sellerEntity = userRepository.findByEmail(seller.getUsername()).orElseThrow(() ->
                 new IllegalArgumentException("User with email " + seller.getUsername() + " not found!"));
 
         newOffer.setModel(modelEntity);
@@ -69,9 +68,9 @@ public class OfferServiceImpl implements OfferService {
     }
 
     @Override
-    public Optional<OfferDetailDTO> getOfferDetail(UUID offerUUID) {
+    public Optional<OfferDetailDTO> getOfferDetail(UUID offerUUID, UserDetails viewer) {
         return offerRepository.findByUuid(offerUUID)
-                .map(OfferServiceImpl::mapAsDetails);
+                .map(o -> this.mapAsDetails(o, viewer));
     }
 
     @Override
@@ -80,7 +79,7 @@ public class OfferServiceImpl implements OfferService {
         offerRepository.deleteByUuid(offerUUID);
     }
 
-    private static OfferDetailDTO mapAsDetails(OfferEntity offerEntity) {
+    private OfferDetailDTO mapAsDetails(OfferEntity offerEntity, UserDetails viewer) {
         //TODO: reuse
         return new OfferDetailDTO(
                 offerEntity.getUuid().toString(),
@@ -91,8 +90,41 @@ public class OfferServiceImpl implements OfferService {
                 offerEntity.getPrice(),
                 offerEntity.getEngine(),
                 offerEntity.getTransmission(),
-                offerEntity.getImageURL());
+                offerEntity.getImageURL(),
+                offerEntity.getSeller().getFirstName() + " " + offerEntity.getSeller().getLastName(),
+                isOwner(offerEntity, viewer != null ? viewer.getUsername() : null));
     }
+
+    @Override
+    public boolean isOwner(UUID uuid, String userName) {
+        return isOwner(offerRepository.findByUuid(uuid).orElse(null), userName);
+    }
+
+    private boolean isOwner(OfferEntity offerEntity, String userName) {
+        if (offerEntity == null || userName == null) {
+            // anonymous users own no offers
+            // missing offers are meaningless
+            return false;
+        }
+
+        UserEntity viewerEntity = userRepository.findByEmail(userName)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown user..."));
+
+        if (isAdmin(viewerEntity)) {
+            // all admins own all offers
+            return true;
+        }
+
+        return Objects.equals(offerEntity.getSeller().getId(), viewerEntity.getId());
+    }
+
+    private boolean isAdmin(UserEntity userEntity) {
+        return userEntity.getRoles()
+                .stream()
+                .map(UserRoleEntity::getRole)
+                .anyMatch(r -> UserRoleEnum.ADMIN == r);
+    }
+
     private static OfferSummaryDTO mapAsSummary(OfferEntity offerEntity) {
         return new OfferSummaryDTO(
                 offerEntity.getUuid().toString(),

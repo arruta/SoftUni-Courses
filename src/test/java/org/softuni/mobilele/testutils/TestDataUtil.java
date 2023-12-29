@@ -78,6 +78,5 @@ public class TestDataUtil {
         offerRepository.deleteAll();
         modelRepository.deleteAll();
         brandRepository.deleteAll();
-
     }
 }
